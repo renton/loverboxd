@@ -1,9 +1,12 @@
-class FilmRating(LetterboxdDataObject):
-    def __init__(self):
-        # id user:film
-        print('boop')
+from letterboxd_data_object import LetterboxdDataObject
 
-class WishlistedFilm(LetterboxdDataObject):
-    def __init__(self):
+class WatchedFilm(LetterboxdDataObject):
+    def __init__(self, data):
         # id user:film
-        pass
+        super().__init__(data)
+
+    def __str__(self):
+        return f"<({self.rating}) {self.user_id } : { self.film_id}>"
+
+    def __repr__(self):
+        return f"<({self.rating}) {self.user_id } : { self.film_id}>"

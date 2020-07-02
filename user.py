@@ -1,4 +1,5 @@
 class User(LetterboxdDataObject):
     def __init__(self):
         self.id = 'boop'
-        print('boop')
+        self.watched_films = {}
+        self.wishlisted_films = {}

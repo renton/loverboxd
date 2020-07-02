@@ -1,4 +1,5 @@
 TODO:
+- current user - get all their films they have seen so they don't get recommended them
 - redis data store
 - mysql data store
 - docker compose to set up redis+mysql env
