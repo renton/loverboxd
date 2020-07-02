@@ -1,0 +1,4 @@
+TODO:
+- redis data store
+- mysql data store
+- docker compose to set up redis+mysql env
