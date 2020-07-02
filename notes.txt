@@ -3,3 +3,8 @@ TODO:
 - redis data store
 - mysql data store
 - docker compose to set up redis+mysql env
+
+- DB
+- Users - if not cached, updates all FilmWatches
+- Films - if not cached, updates all FilmWatches
+- FilmWatches

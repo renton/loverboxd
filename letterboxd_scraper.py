@@ -44,10 +44,7 @@ class LetterboxdScraper(LetterboxdAPIInterface):
                 else:
                     rating = None
 
-                if ( rating is None ) or ( rating < highest_rating_to_use ):
-                    return rating_index 
-
-                if rating < highest_rating_to_use:
+                if ( highest_rating_to_use != None ) and ( ( rating is None ) or ( rating < highest_rating_to_use ) ):
                     return rating_index 
 
                 id = f"{user_id}:{film_id}"
@@ -79,7 +76,7 @@ class LetterboxdScraper(LetterboxdAPIInterface):
             else:
                 rating = None
 
-            if ( rating is None ) or ( rating < highest_rating_to_use ):
+            if ( highest_rating_to_use != None ) and ( ( rating is None ) or ( rating < highest_rating_to_use ) ):
                 return rating_index 
 
             users = rating_group.find_all('a', class_="avatar")
