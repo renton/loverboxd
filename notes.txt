@@ -3,8 +3,18 @@ TODO:
 - redis data store
 - mysql data store
 - docker compose to set up redis+mysql env
+- Grab lists / Make super lists based on occurence
+- Handle multiple films to rec from
+- Set User and Film objects with relationships in DS
+- Calculate user match scores
+    - (input 2 users)
+    - (input your user and match off of films (low and high))
+- The less popular a film, the higher weight of user recs from it are worth (or maybe just in final spreadsheet)
+- Output to csv
 
 - DB
-- Users - if not cached, updates all FilmWatches
-- Films - if not cached, updates all FilmWatches
+- Sort final report
+- Redis store ( Redis hmset for dicts)
+- Users - if not cached, updates all FilmWatches (date last watches sync)
+- Films - if not cached, updates all FilmWatches (date last watches sync)
 - FilmWatches
