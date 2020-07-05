@@ -12,10 +12,11 @@ class LetterboxdScraper(LetterboxdAPIInterface):
 
         super().__init__(ds)
 
-    def get_films_for_user(self, user_id, highest_rating_to_use=9):
-        user = self.ds.get('users', user_id)
-        if user:
-            return user
+    def get_films_for_user(self, user_id, highest_rating_to_use=9, bypass_cache=False):
+        if not bypass_cache:
+            user = self.ds.get('users', user_id)
+            if user:
+                return user
 
         rating_index = {}
         encountered_all_ratings = False        
@@ -71,14 +72,15 @@ class LetterboxdScraper(LetterboxdAPIInterface):
 
         return rating_index
     
-    def get_ratings_for_film(self, film_id, highest_rating_to_use=9):
-        film = self.ds.get('films', film_id)
-        encountered_all_ratings = False        
+    def get_ratings_for_film(self, film_id, highest_rating_to_use=9, bypass_cache=False):
+        if not bypass_cache:
+            film = self.ds.get('films', film_id)
 
-        if film:
-            return film
+            if film:
+                return film
 
         # TODO pagination
+        encountered_all_ratings = False        
         rating_index = {}
         page = self._fetch_url(self._build_film_ratings_url(film_id))
         soup = BeautifulSoup(page, 'html.parser')

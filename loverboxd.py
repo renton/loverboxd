@@ -2,11 +2,13 @@ import csv
 import urllib.request
 from bs4 import BeautifulSoup
 from functools import reduce
+from collections import defaultdict
 
 from data_store_redis import DataStoreRedis
 from letterboxd_scraper import LetterboxdScraper
 
 MINIMUM_NUMBER_MATCHES = 5
+MINIMUM_NUMBER_MATCHES_SIMILAR_USERS = 15
 
 class Loverboxd:
     def __init__(self):
@@ -30,12 +32,59 @@ class Loverboxd:
     def get_films_for_user(self, user_id):
         return self.api.get_films_for_user(user_id)
 
+    def find_similar_users(self):        
+        # TODO Users that appear the most are highest match
+        # TODO later: take all your film 1-10 ratings and apply a delta weight
+        # TODO less popular films get a boost?
+        user_recs = defaultdict(lambda: 0)
+
+        my_films = {}
+        if self.current_user:
+            my_films = self.api.get_films_for_user(self.current_user, highest_rating_to_use=9, bypass_cache=True)
+
+        for k2,v2 in my_films.items():
+            for k,v in self.api.get_ratings_for_film(k2).items():
+                user_recs[k] += 1
+
+        for k,v in user_recs.items():
+            if v >= MINIMUM_NUMBER_MATCHES_SIMILAR_USERS:
+                print(f"{k},{v}")
+        return user_recs
+
+    def user_compatibility_score(self, user1, user2):
+        # TODO score based on deltas??
+        # TODO normalize ratings??
+        # TODO show the outliers??
+        # TODO less popular films get a boost?
+        user1_ratings = self.api.get_films_for_user(user1, highest_rating_to_use=None, bypass_cache=True)
+        user2_ratings = self.api.get_films_for_user(user2, highest_rating_to_use=None, bypass_cache=True)
+
+        shared_films = 0
+        delta_matrix = defaultdict(lambda: 0)
+        for k,v in user1_ratings.items():
+            if k in user2_ratings:
+                if v['rating'] and user2_ratings[k]['rating']:
+                    delta = abs(v['rating'] - user2_ratings[k]['rating'])
+                    delta_matrix[delta] += 1
+                    shared_films += 1                
+
+        print('Shared Films: ', shared_films)
+        for k,v in delta_matrix.items():
+            perc = "{:.2f}".format((v / shared_films) * 100)
+            print(f"{k}: {v} ({perc}%)")
+
+        score = 0
+        for k,v in delta_matrix.items():
+            score += abs(10 - k) * v
+        score = "{:.2f}".format( score / shared_films )
+        print(score)
+
     def get_recs_based_on_films(self, film_ids):
         film_recs = {}        
 
         my_films = {}
         if self.current_user:
-            my_films = self.api.get_films_for_user(self.current_user, highest_rating_to_use=None)
+            my_films = self.api.get_films_for_user(self.current_user, highest_rating_to_use=None, bypass_cache=True)
    
         ratings = []
         for film_id in film_ids:
@@ -68,6 +117,8 @@ class Loverboxd:
 if __name__ == "__main__":
     lbd = Loverboxd()
     lbd.set_user('hell0keekee')
+    #lbd.find_similar_users()
+    #lbd.user_compatibility_score('rrinehart1976', 'rentonl')
     lbd.get_recs_based_on_films(
         [
             '/film/house',
