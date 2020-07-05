@@ -7,7 +7,7 @@ from collections import defaultdict
 from data_store_redis import DataStoreRedis
 from letterboxd_scraper import LetterboxdScraper
 
-MINIMUM_NUMBER_MATCHES_PERCENT = 0.2
+MINIMUM_NUMBER_MATCHES_PERCENT = 0.20
 MINIMUM_NUMBER_MATCHES_DEFAULT = 5
 
 MINIMUM_NUMBER_MATCHES_SIMILAR_USERS = 15

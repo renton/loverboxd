@@ -9,3 +9,7 @@ TODO:
 are 5s and they should be skipped
 - store multiple dicts in redis to hydrate the whole object
 - having the same rating on a lower popularity film should be weighted higher than having the same rating on a popular film
+
+- occurence x popularity multipier
+- 50 x 0.05 = 2.5
+- 4 x 0.9 = 3.6
