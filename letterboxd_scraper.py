@@ -4,6 +4,8 @@ from user import User
 import urllib.request
 from bs4 import BeautifulSoup
 
+HIGHEST_RATING_TO_USE = 8
+
 class LetterboxdScraper(LetterboxdAPIInterface):
     def __init__(self, ds):
         self._build_user_watchlist_url = lambda user_id : f"https://letterboxd.com/{user_id}/watchlist"
@@ -12,7 +14,7 @@ class LetterboxdScraper(LetterboxdAPIInterface):
 
         super().__init__(ds)
 
-    def get_films_for_user(self, user_id, highest_rating_to_use=9, bypass_cache=False):
+    def get_films_for_user(self, user_id, highest_rating_to_use=(HIGHEST_RATING_TO_USE+1), bypass_cache=False):
         if not bypass_cache:
             user = self.ds.get('users', user_id)
             if user:
@@ -50,6 +52,13 @@ class LetterboxdScraper(LetterboxdAPIInterface):
                 else:
                     rating = None
 
+                if rating and (page_num >= (num_pages / 3)) and rating == 10:
+                    # This user gives too many 10s. Ignore
+                    print('-> Too many 10s : skipping ', user_id)
+                    rating_index = {}
+                    encountered_all_ratings = True                    
+                    break
+
                 if ( highest_rating_to_use != None ) and ( ( rating is None ) or ( rating < highest_rating_to_use ) ):
                     encountered_all_ratings = True
                     break
@@ -72,7 +81,7 @@ class LetterboxdScraper(LetterboxdAPIInterface):
 
         return rating_index
     
-    def get_ratings_for_film(self, film_id, highest_rating_to_use=9, bypass_cache=False):
+    def get_ratings_for_film(self, film_id, highest_rating_to_use=(HIGHEST_RATING_TO_USE+1), bypass_cache=False):
         if not bypass_cache:
             film = self.ds.get('films', film_id)
 

@@ -4,4 +4,8 @@ TODO:
 - The less popular a film, the higher weight of user recs from it are worth (or maybe just in final spreadsheet)
 - Output to csv
 - cache values need to handle the highest score value
-
+- maybe get_recs_based_on_films only scans users that appear in x (30%?) number of films
+- try to prune out ppl who give 5s for everything, if you know they have x pages of films and you are on x/2 and still hitting 5s you know half of their ratings
+are 5s and they should be skipped
+- store multiple dicts in redis to hydrate the whole object
+- having the same rating on a lower popularity film should be weighted higher than having the same rating on a popular film
