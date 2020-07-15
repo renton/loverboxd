@@ -1,12 +1,11 @@
 from letterboxd_data_object import LetterboxdDataObject
 
 class Film(LetterboxdDataObject):
-    def __init__(self, data):
-        super().__init__(data)
-        self.datatype = 'films'    
+    datatype = 'films'
+
+    def __init__(self, id, data):
+        self.highest_rating_to_use = 10
+        super().__init__(id, data)
 
     def __str__(self):
-        return f"<Film: { self.name}>"
-
-    def save(self, ds):
-        ds.set(self.datatype, self.id, self.user_watches)
+        return f"<Film: { self.id}>"

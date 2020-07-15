@@ -1,7 +1,7 @@
 from letterboxd_data_object import LetterboxdDataObject
 
-class User(LetterboxdDataObject):
-    datatype = 'users'
+class List(LetterboxdDataObject):
+    datatype = 'lists'
 
     def __init__(self, id, data):
         super().__init__(id, data)

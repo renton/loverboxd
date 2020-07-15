@@ -92,7 +92,7 @@ class Loverboxd:
    
         ratings = defaultdict(lambda: 0)
         for film_id in film_ids:
-            for rating in self.api.get_ratings_for_film(film_id).values():
+            for rating in self.api.get_ratings_for_film(film_id).user_watches.values():
                 ratings[rating['user_id']] += 1
 
         total_users = len(ratings.keys())
@@ -102,7 +102,7 @@ class Loverboxd:
        
         for user_id in ratings.keys():
             if user_id != self.current_user:
-                for user_film in self.api.get_films_for_user(user_id, highest_rating_to_use=HIGHEST_RATING_TO_USE, bypass_cache=False).values():
+                for user_film in self.api.get_films_for_user(user_id, highest_rating_to_use=HIGHEST_RATING_TO_USE, bypass_cache=False).watched_films.values():
                     if user_film['film_id'] not in my_films:
                         if user_film['film_id'] not in film_recs:
                             film_recs[user_film['film_id']] = {
@@ -126,7 +126,10 @@ class Loverboxd:
 if __name__ == "__main__":
     lbd = Loverboxd()
     lbd.set_user('rentonl')
-    films = list(lbd.api.get_films_for_user(lbd.current_user, highest_rating_to_use=9, bypass_cache=True).keys())
+    #films = list(lbd.api.get_films_for_user(lbd.current_user, highest_rating_to_use=8, bypass_cache=True).watched_films.keys())
+    x = lbd.api.get_ratings_for_film('/film/breathless/', highest_rating_to_use=10, bypass_cache=False)
+    print(vars(x).keys())
+    #print(films)
     #lbd.find_similar_users()
     #lbd.user_compatibility_score('rrinehart1976', 'rentonl')
-    lbd.get_recs_based_on_films(films)
+    #lbd.get_recs_based_on_films(films)
