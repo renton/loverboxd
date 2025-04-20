@@ -1,0 +1,1 @@
+from app.blueprints.auth.models import User

@@ -1,135 +1,130 @@
-import csv
-import urllib.request
-from bs4 import BeautifulSoup
-from functools import reduce
-from collections import defaultdict
+import os, sys
 
-from data_store_redis import DataStoreRedis
-from letterboxd_scraper import LetterboxdScraper
+# load .env file
+from dotenv import load_dotenv
 
-MINIMUM_NUMBER_MATCHES_PERCENT = 0.20
-MINIMUM_NUMBER_MATCHES_DEFAULT = 5
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path, override=True)
 
-MINIMUM_NUMBER_MATCHES_SIMILAR_USERS = 15
+import click
+from sqlalchemy.exc import IntegrityError
+from app import create_app, db
+from flask import render_template, request, jsonify, Response
 
-HIGHEST_RATING_TO_USE = 9
+# COV = None
+# if os.environ.get('FLASK_COVERAGE'):
+#     import coverage
+#     COV = coverage.coverage(branch=True, include='app/*')
+#     COV.start()
 
-class Loverboxd:
-    def __init__(self):
-        self.api = LetterboxdScraper( DataStoreRedis() )
-        self.current_user = None
+# from flask_migrate import Migrate, upgrade
+# from app.models import \
+#     Chapter, Character, Faction, Role
 
-    def set_user(self, current_user):
-        self.current_user = current_user
+app = create_app(os.getenv('FLASK_ENV') or 'default')
 
-    def find_shared_watchlisted_films_for_users(self, user_ids):
-        films = []
+# migrate = Migrate(app, db)
 
-        for user_id in user_ids:
-            films.append(self.api.get_watchlist_films_for_user(user_id).keys())
-        
-        matches = list(reduce(set.intersection, [set(item) for item in films ]))
+@app.after_request
+def set_csp_header(response: Response):
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
+        "style-src 'self' https://cdn.jsdelivr.net;"
+    )
+    return response
 
-    def get_ratings_for_film(self, film_id):
-        return self.api.get_ratings_for_film(film_id)
+@app.cli.command()
+def create_all():
+    db.create_all()
 
-    def get_films_for_user(self, user_id):
-        return self.api.get_films_for_user(user_id)
+@app.cli.command()
+def deploy():
+    """Run deployment tasks."""
+    pass
+    # migrate database to latest revision
+    #upgrade()
 
-    def find_similar_users(self):        
-        # TODO Users that appear the most are highest match
-        # TODO later: take all your film 1-10 ratings and apply a delta weight
-        # TODO less popular films get a boost?
-        user_recs = defaultdict(lambda: 0)
+    # create or update user roles
+    #Role.insert_roles()
 
-        my_films = {}
-        if self.current_user:
-            my_films = self.api.get_films_for_user(self.current_user, highest_rating_to_use=(HIGHEST_RATING_TO_USE+1), bypass_cache=True)
+    # ensure all users are following themselves
+    #User.add_self_follows()
 
-        for k2,v2 in my_films.items():
-            for k,v in self.api.get_ratings_for_film(k2).items():
-                user_recs[k] += 1
+# @app.shell_context_processor
+# def make_shell_context():
+#     return dict(db=db, User=User, Follow=Follow, Role=Role,
+#                 Permission=Permission, Post=Post, Comment=Comment)
 
-        for k,v in user_recs.items():
-            if v >= MINIMUM_NUMBER_MATCHES_SIMILAR_USERS:
-                print(f"{k},{v}")
-        return user_recs
 
-    def user_compatibility_score(self, user1, user2):
-        # TODO score based on deltas??
-        # TODO normalize ratings??
-        # TODO show the outliers??
-        # TODO less popular films get a boost?
-        user1_ratings = self.api.get_films_for_user(user1, highest_rating_to_use=None, bypass_cache=True)
-        user2_ratings = self.api.get_films_for_user(user2, highest_rating_to_use=None, bypass_cache=True)
+# @app.cli.command()
+# @click.option('--coverage/--no-coverage', default=False,
+#               help='Run tests under code coverage.')
+# @click.argument('test_names', nargs=-1)
+# def test(coverage, test_names):
+#     """Run the unit tests."""
+#     if coverage and not os.environ.get('FLASK_COVERAGE'):
+#         import subprocess
+#         os.environ['FLASK_COVERAGE'] = '1'
+#         sys.exit(subprocess.call(sys.argv))
 
-        shared_films = 0
-        delta_matrix = defaultdict(lambda: 0)
-        for k,v in user1_ratings.items():
-            if k in user2_ratings:
-                if v['rating'] and user2_ratings[k]['rating']:
-                    delta = abs(v['rating'] - user2_ratings[k]['rating'])
-                    delta_matrix[delta] += 1
-                    shared_films += 1                
+#     import unittest
+#     if test_names:
+#         tests = unittest.TestLoader().loadTestsFromNames(test_names)
+#     else:
+#         tests = unittest.TestLoader().discover('tests')
+#     unittest.TextTestRunner(verbosity=2).run(tests)
+#     if COV:
+#         COV.stop()
+#         COV.save()
+#         print('Coverage Summary:')
+#         COV.report()
+#         basedir = os.path.abspath(os.path.dirname(__file__))
+#         covdir = os.path.join(basedir, 'tmp/coverage')
+#         COV.html_report(directory=covdir)
+#         print('HTML version: file://%s/index.html' % covdir)
+#         COV.erase()
 
-        print('Shared Films: ', shared_films)
-        for k,v in delta_matrix.items():
-            perc = "{:.2f}".format((v / shared_films) * 100)
-            print(f"{k}: {v} ({perc}%)")
 
-        score = 0
-        for k,v in delta_matrix.items():
-            score += abs(10 - k) * v
-        score = "{:.2f}".format( score / shared_films )
-        print(score)
+# @app.cli.command()
+# @click.option('--length', default=25,
+#               help='Number of functions to include in the profiler report.')
+# @click.option('--profile-dir', default=None,
+#               help='Directory where profiler data files are saved.')
+# def profile(length, profile_dir):
+#     """Start the application under the code profiler."""
+#     from werkzeug.contrib.profiler import ProfilerMiddleware
+#     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
+#                                       profile_dir=profile_dir)
+#     app.run()
 
-    def get_recs_based_on_films(self, film_ids):
-        film_recs = {}
 
-        my_films = {}
-        if self.current_user:
-            my_films = self.api.get_films_for_user(self.current_user, highest_rating_to_use=None, bypass_cache=True)
-   
-        ratings = defaultdict(lambda: 0)
-        for film_id in film_ids:
-            for rating in self.api.get_ratings_for_film(film_id).user_watches.values():
-                ratings[rating['user_id']] += 1
+@app.errorhandler(403)
+def forbidden(e):
+    if request.accept_mimetypes.accept_json and \
+            not request.accept_mimetypes.accept_html:
+        response = jsonify({'error': 'forbidden'})
+        response.status_code = 403
+        return response
+    return render_template('errors/403.html'), 403
 
-        total_users = len(ratings.keys())
-        min_number_matches = max(MINIMUM_NUMBER_MATCHES_DEFAULT, len(film_ids) * MINIMUM_NUMBER_MATCHES_PERCENT)
-        remove_users = [k for k in ratings if ratings[k] < min_number_matches]
-        for k in remove_users: del ratings[k]
-       
-        for user_id in ratings.keys():
-            if user_id != self.current_user:
-                for user_film in self.api.get_films_for_user(user_id, highest_rating_to_use=HIGHEST_RATING_TO_USE, bypass_cache=False).watched_films.values():
-                    if user_film['film_id'] not in my_films:
-                        if user_film['film_id'] not in film_recs:
-                            film_recs[user_film['film_id']] = {
-                                'count' : 0,
-                            }
 
-                        film_recs[user_film['film_id']]['count'] += 1
+@app.errorhandler(404)
+def page_not_found(e):
+    if request.accept_mimetypes.accept_json and \
+            not request.accept_mimetypes.accept_html:
+        response = jsonify({'error': 'not found'})
+        response.status_code = 404
+        return response
+    return render_template('errors/404.html'), 404
 
-        rec_count = 0
-        with open(f"{self.current_user}.csv", mode='w') as rec_file:
-            rec_writer = csv.writer(rec_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-            for k,v in film_recs.items():
-                rec_count += 1
-                rec_writer.writerow([v['count'], k])
-        print('=======================')
-        print(f"Checked against {len(film_ids)} films")
-        print(f"Matched Users (at least {min_number_matches} matches): {len(ratings.keys())} / {total_users}")
-        print('DONE! Films Recommended: ', rec_count)
-
-if __name__ == "__main__":
-    lbd = Loverboxd()
-    lbd.set_user('rentonl')
-    #films = list(lbd.api.get_films_for_user(lbd.current_user, highest_rating_to_use=8, bypass_cache=True).watched_films.keys())
-    x = lbd.api.get_ratings_for_film('/film/breathless/', highest_rating_to_use=10, bypass_cache=False)
-    print(vars(x).keys())
-    #print(films)
-    #lbd.find_similar_users()
-    #lbd.user_compatibility_score('rrinehart1976', 'rentonl')
-    #lbd.get_recs_based_on_films(films)
+@app.errorhandler(500)
+def internal_server_error(e):
+    if request.accept_mimetypes.accept_json and \
+            not request.accept_mimetypes.accept_html:
+        response = jsonify({'error': 'internal server error'})
+        response.status_code = 500
+        return response
+    return render_template('errors/500.html'), 500

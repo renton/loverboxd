@@ -1,0 +1,23 @@
+version: '3.7'
+services:
+  app:
+    build: .
+    networks:
+      - vswitch0
+    expose:
+      - "${FLASK_APP_PORT}"
+    env_file: .env
+    environment:
+      FLASK_ENV: 'production'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FLASK_APP_PORT}"]
+      interval: 10s
+      retries: 5
+      start_period: 1s
+    volumes:
+      - .:${FLASK_APP_PATH}
+
+networks:
+  vswitch0:
+    driver: bridge

@@ -1,2 +1,2 @@
 # loverboxd
-fun with letterboxd data
+coming soon...
